@@ -34,7 +34,7 @@ https://www.ath4.net/
 
 Download ATH from the official website:
 
-https://www.ath4.net/
+https://www.at-horns.eu/index.html
 
 After downloading, extract the package to a directory such as:
 
@@ -278,7 +278,7 @@ Developed by **Marcel Batik**
 
 Official site:
 
-[https://www.ath4.net/](https://www.ath4.net/)
+[https://www.at-horns.eu/index.html](https://www.ath4.net/)
 
 This GUI project is an **independent interface built on top of ATH** to improve usability and workflow for waveguide design.
 
