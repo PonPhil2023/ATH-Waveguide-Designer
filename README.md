@@ -1,6 +1,3 @@
----
-
-```markdown
 # ATH Waveguide Designer GUI
 
 A modern graphical user interface for designing acoustic waveguides with **ATH (Athena)**.
@@ -291,7 +288,3 @@ This GUI project is an **independent interface built on top of ATH** to improve 
 
 ATH Waveguide Designer GUI
 Developed as a usability enhancement for ATH-based acoustic waveguide design.
-
-```
-
----
