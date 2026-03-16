@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+.venv/
+env/
+
+# Generated files
+generated_cfg/
+output/
+
+# Large/generated artifacts
+*.stl
+*.cfg
+
+# VS Code
+.vscode/
+
+# Logs
+*.log
