@@ -24,7 +24,7 @@ ATH is the acoustic waveguide generator developed by **Marcel Batik** and widely
 
 Official website:
 
-https://www.ath4.net/
+https://www.at-horns.eu/index.html
 
 ---
 
@@ -278,7 +278,7 @@ Developed by **Marcel Batik**
 
 Official site:
 
-[https://www.at-horns.eu/index.html](https://www.ath4.net/)
+[https://www.at-horns.eu/index.html](https://www.at-horns.eu/index.html)
 
 This GUI project is an **independent interface built on top of ATH** to improve usability and workflow for waveguide design.
 
