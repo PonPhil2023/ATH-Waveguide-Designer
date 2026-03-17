@@ -4,20 +4,25 @@ __pycache__/
 *.pyo
 *.pyd
 
-# Virtual environment
+# virtual env
 .venv/
 env/
 
-# Generated files
+# build
+dist/
+build/
+*.exe
+
+# generated files
 generated_cfg/
 output/
 
-# Large/generated artifacts
+# artifacts
 *.stl
 *.cfg
 
-# VS Code
+# IDE
 .vscode/
 
-# Logs
+# logs
 *.log

@@ -116,6 +116,10 @@ QStatusBar {
 """
 
 
+# tuple 格式：
+# 一般欄位: (key, label, default, field_type)
+# 下拉欄位: (key, label, default_value, "enum", [(顯示文字, 實際值), ...])
+
 OSSE_GROUPS = {
     "幾何設定 (OS-SE Geometry)": [
         ("throat_diameter", "喉部直徑 (Throat.Diameter)", 25.4, "float"),
@@ -136,52 +140,150 @@ OSSE_GROUPS = {
     ],
 }
 
-
 TRITONIA_GROUPS = {
-    "OSSE 區塊": [
-        ("L", "波導深度 L [mm]", 135.0, "float"),
-        ("r0", "喉部半徑 r0 [mm]", 36.0, "float"),
-        ("a0", "喉部角 a0 [deg]", 4.2, "float"),
-        ("a_expr", "指向角公式 a", "48.5 - 7.0*cos(2.0*p)^5.0 - 16.0*sin(p)^12.0", "text"),
-        ("s_expr", "參數公式 s", "0.7 + 0.2*cos(p)^2", "text"),
-        ("n", "n", 3.7, "float"),
-        ("q", "q", 0.995, "float"),
-        ("k", "k", 1.0, "float"),
+    "OSSE 基本設定": [
+        ("L", "波導深度 L (Length)", 135.0, "float"),
+        ("r0", "喉部半徑 r0 (OSSE.r0)", 36.0, "float"),
+        ("a0", "喉部開口半角 a0 (OSSE.a0)", 4.2, "float"),
+        ("a_expr", "指向角公式 a (Coverage.Angle)", "48.5 - 7.0*cos(2.0*p)^5.0 - 16.0*sin(p)^12.0", "text"),
+        ("s_expr", "終端參數公式 s (Term.s)", "0.7 + 0.2*cos(p)^2", "text"),
+        ("n", "終端參數 n (Term.n)", 3.7, "float"),
+        ("q", "終端參數 q (Term.q)", 0.995, "float"),
+        ("k", "OS 參數 k (OS.k)", 1.0, "float"),
     ],
-    "Morph 設定": [
-        ("morph_target_shape", "出口形狀 (1=矩形, 2=圓形)", 1, "int"),
-        ("morph_fixed_part", "Morph.FixedPart", 0.0, "float"),
-        ("morph_rate", "Morph.Rate", 3.0, "float"),
-        ("morph_corner_radius", "CornerRadius [mm]", 18.0, "float"),
+    "出口形狀設定": [
+        (
+            "morph_target_shape",
+            "出口目標形狀 (Morph.TargetShape)",
+            1,
+            "enum",
+            [("保持原始 (0)", 0), ("矩形 (1)", 1), ("圓形 (2)", 2)],
+        ),
+        ("morph_fixed_part", "固定段比例 (Morph.FixedPart)", 0.0, "float"),
+        ("morph_rate", "形變速率 (Morph.Rate)", 3.0, "float"),
+        ("morph_corner_radius", "出口圓角半徑 (Morph.CornerRadius) [mm]", 18.0, "float"),
     ],
-    "Mesh 設定": [
-        ("mesh_angular_segments", "Mesh.AngularSegments", 80, "int"),
-        ("mesh_length_segments", "Mesh.LengthSegments", 26, "int"),
-        ("mesh_corner_segments", "Mesh.CornerSegments", 4, "int"),
-        ("mesh_throat_resolution", "Mesh.ThroatResolution", 5.0, "float"),
-        ("mesh_mouth_resolution", "Mesh.MouthResolution", 10.0, "float"),
-        ("mesh_interface_resolution", "Mesh.InterfaceResolution", 7.0, "float"),
-        ("mesh_subdomain_slices", "Mesh.SubdomainSlices", 26, "int"),
+    "網格設定": [
+        ("mesh_angular_segments", "周向剖面分段數 (Mesh.AngularSegments)", 80, "int"),
+        ("mesh_length_segments", "軸向切片分段數 (Mesh.LengthSegments)", 26, "int"),
+        ("mesh_corner_segments", "角落分段數 (Mesh.CornerSegments)", 4, "int"),
+        ("mesh_throat_resolution", "喉部網格解析度 (Mesh.ThroatResolution) [mm]", 5.0, "float"),
+        ("mesh_mouth_resolution", "口部網格解析度 (Mesh.MouthResolution) [mm]", 10.0, "float"),
+        ("mesh_interface_resolution", "介面網格解析度 (Mesh.InterfaceResolution) [mm]", 7.0, "float"),
+        ("mesh_subdomain_slices", "子域切片索引 (Mesh.SubdomainSlices)", 26, "int"),
     ],
-    "ABEC 設定": [
-        ("abec_sim_type", "ABEC.SimType", 1, "int"),
-        ("abec_f1", "ABEC.f1 [Hz]", 400, "int"),
-        ("abec_f2", "ABEC.f2 [Hz]", 12000, "int"),
-        ("abec_num_frequencies", "ABEC.NumFrequencies", 40, "int"),
-        ("abec_mesh_frequency", "ABEC.MeshFrequency", 1000, "int"),
+    "ABEC 模擬設定": [
+        (
+            "abec_sim_type",
+            "模擬型式 (ABEC.SimType)",
+            1,
+            "enum",
+            [("Infinite Baffle (1)", 1), ("Free Space (2)", 2)],
+        ),
+        ("abec_f1", "起始頻率 (ABEC.f1) [Hz]", 400, "int"),
+        ("abec_f2", "結束頻率 (ABEC.f2) [Hz]", 12000, "int"),
+        ("abec_num_frequencies", "頻率點數 (ABEC.NumFrequencies)", 40, "int"),
+        ("abec_mesh_frequency", "網格頻率 (ABEC.MeshFrequency) [Hz]", 1000, "int"),
     ],
-    "Polar / Report": [
-        ("distance_h", "SPL_H Distance [m]", 2.0, "float"),
-        ("offset_h", "SPL_H Offset [mm]", 145.0, "float"),
-        ("distance_v", "SPL_V Distance [m]", 2.0, "float"),
-        ("offset_v", "SPL_V Offset [mm]", 145.0, "float"),
-        ("distance_d", "SPL_D Distance [m]", 2.0, "float"),
-        ("offset_d", "SPL_D Offset [mm]", 145.0, "float"),
-        ("inclination_d", "SPL_D Inclination", 42.0, "float"),
-        ("output_abec_project", "Output.ABECProject", 1, "int"),
-        ("output_stl", "Output.STL", 1, "int"),
-        ("report_title", "Report.Title", "Tritonia", "text"),
-        ("report_norm_angle", "Report.NormAngle", 10, "int"),
+    "極座標與報表設定": [
+        ("distance_h", "水平極圖距離 (SPL_H.Distance) [m]", 2.0, "float"),
+        ("offset_h", "水平極圖偏移 (SPL_H.Offset) [mm]", 145.0, "float"),
+        ("distance_v", "垂直極圖距離 (SPL_V.Distance) [m]", 2.0, "float"),
+        ("offset_v", "垂直極圖偏移 (SPL_V.Offset) [mm]", 145.0, "float"),
+        ("distance_d", "對角極圖距離 (SPL_D.Distance) [m]", 2.0, "float"),
+        ("offset_d", "對角極圖偏移 (SPL_D.Offset) [mm]", 145.0, "float"),
+        ("inclination_d", "對角傾角 (SPL_D.Inclination) [deg]", 42.0, "float"),
+        ("output_abec_project", "輸出 ABEC 專案 (Output.ABECProject)", 1, "int"),
+        ("output_stl", "輸出 STL 模型 (Output.STL)", 1, "int"),
+        ("report_title", "報表標題 (Report.Title)", "Tritonia", "text"),
+        ("report_norm_angle", "報表正規化角度 (Report.NormAngle)", 10, "int"),
+    ],
+}
+
+TRITONIA_M_GROUPS = {
+    "基本幾何設定": [
+        ("scale", "縮放倍率 (Scale)", 0.702, "float"),
+        ("throat_diameter", "喉部直徑 (Throat.Diameter) [mm]", 36.182, "float"),
+        ("throat_angle", "喉部開口半角 (Throat.Angle) [deg]", 10.0, "float"),
+        ("length", "波導深度 (Length) [mm]", 135.0, "float"),
+        ("coverage_angle_expr", "指向角公式 (Coverage.Angle)", "48.5 - 7*cos(2*p)^5 - 16*sin(p)^12", "text"),
+        ("term_s_expr", "終端參數公式 s (Term.s)", "0.7 + 0.2*cos(p)^2", "text"),
+        ("term_n", "終端參數 n (Term.n)", 3.7, "float"),
+        ("term_q", "終端參數 q (Term.q)", 0.992, "float"),
+    ],
+    "出口形狀設定": [
+        (
+            "morph_target_shape",
+            "出口目標形狀 (Morph.TargetShape)",
+            1,
+            "enum",
+            [("保持原始 (0)", 0), ("矩形 (1)", 1), ("圓形 (2)", 2)],
+        ),
+        ("morph_fixed_part", "固定段比例 (Morph.FixedPart)", 0.0, "float"),
+        ("morph_rate", "形變速率 (Morph.Rate)", 3.0, "float"),
+        ("morph_corner_radius", "出口圓角半徑 (Morph.CornerRadius) [mm]", 18.0, "float"),
+    ],
+    "箱體與障板設定": [
+        ("enclosure_spacing_left", "左側間距 (Mesh.Enclosure.Spacing Left)", 25, "int"),
+        ("enclosure_spacing_top", "上側間距 (Mesh.Enclosure.Spacing Top)", 25, "int"),
+        ("enclosure_spacing_right", "右側間距 (Mesh.Enclosure.Spacing Right)", 25, "int"),
+        ("enclosure_spacing_bottom", "下側間距 (Mesh.Enclosure.Spacing Bottom)", 300, "int"),
+        ("enclosure_depth", "箱體深度 (Mesh.Enclosure.Depth) [mm]", 280, "int"),
+        ("enclosure_edge_radius", "邊緣半徑 (Mesh.Enclosure.EdgeRadius) [mm]", 18, "int"),
+        (
+            "enclosure_edge_type",
+            "邊緣型式 (Mesh.Enclosure.EdgeType)",
+            2,
+            "enum",
+            [("圓角 Rounded (1)", 1), ("斜角 Chamfered (2)", 2)],
+        ),
+        ("front_resolution_1", "前障板解析度 1 (FrontResolution 1)", 10, "int"),
+        ("front_resolution_2", "前障板解析度 2 (FrontResolution 2)", 10, "int"),
+        ("front_resolution_3", "前障板解析度 3 (FrontResolution 3)", 20, "int"),
+        ("front_resolution_4", "前障板解析度 4 (FrontResolution 4)", 25, "int"),
+        ("back_resolution_1", "後障板解析度 1 (BackResolution 1)", 40, "int"),
+        ("back_resolution_2", "後障板解析度 2 (BackResolution 2)", 40, "int"),
+        ("back_resolution_3", "後障板解析度 3 (BackResolution 3)", 40, "int"),
+        ("back_resolution_4", "後障板解析度 4 (BackResolution 4)", 40, "int"),
+    ],
+    "低頻聲源設定": [
+        ("lfsource_radius", "低頻聲源半徑 (LFSource.B.Radius) [mm]", 100, "int"),
+        ("lfsource_spacing", "低頻聲源間距 (LFSource.B.Spacing) [mm]", 35, "int"),
+        ("lfsource_driving_weight", "驅動權重 (LFSource.B.DrivingWeight)", 0, "int"),
+        ("lfsource_sid", "聲源 ID (LFSource.B.SID)", 1, "int"),
+    ],
+    "網格設定": [
+        ("mesh_quadrants", "象限設定 (Mesh.Quadrants)", 14, "int"),
+        ("mesh_vertical_offset", "垂直偏移 (Mesh.VerticalOffset)", 80, "int"),
+        ("mesh_angular_segments", "周向剖面分段數 (Mesh.AngularSegments)", 80, "int"),
+        ("mesh_length_segments", "軸向切片分段數 (Mesh.LengthSegments)", 20, "int"),
+        ("mesh_corner_segments", "角落分段數 (Mesh.CornerSegments)", 4, "int"),
+        ("mesh_throat_resolution", "喉部網格解析度 (Mesh.ThroatResolution) [mm]", 5.0, "float"),
+        ("mesh_mouth_resolution", "口部網格解析度 (Mesh.MouthResolution) [mm]", 10.0, "float"),
+        ("mesh_interface_resolution", "介面網格解析度 (Mesh.InterfaceResolution) [mm]", 8.0, "float"),
+        ("mesh_subdomain_slices", "子域切片索引 (Mesh.SubdomainSlices，空白=禁用)", "", "text"),
+    ],
+    "ABEC 與極座標設定": [
+        (
+            "abec_sim_type",
+            "模擬型式 (ABEC.SimType)",
+            2,
+            "enum",
+            [("Infinite Baffle (1)", 1), ("Free Space (2)", 2)],
+        ),
+        ("abec_f1", "起始頻率 (ABEC.f1) [Hz]", 400, "int"),
+        ("abec_f2", "結束頻率 (ABEC.f2) [Hz]", 16000, "int"),
+        ("abec_num_frequencies", "頻率點數 (ABEC.NumFrequencies)", 40, "int"),
+        ("abec_mesh_frequency", "網格頻率 (ABEC.MeshFrequency) [Hz]", 1000, "int"),
+        ("distance_h", "水平極圖距離 (SPL_H.Distance) [m]", 2.0, "float"),
+        ("norm_angle_h", "水平正規化角度 (SPL_H.NormAngle) [deg]", 10.0, "float"),
+        ("distance_v", "垂直極圖距離 (SPL_V.Distance) [m]", 2.0, "float"),
+        ("inclination_v", "垂直傾角 (SPL_V.Inclination) [deg]", 270.0, "float"),
+        ("norm_angle_v", "垂直正規化角度 (SPL_V.NormAngle) [deg]", 10.0, "float"),
+        ("output_abec_project", "輸出 ABEC 專案 (Output.ABECProject)", 1, "int"),
+        ("output_stl", "輸出 STL 模型 (Output.STL)", 1, "int"),
+        ("report_title", "報表標題 (Report.Title)", "ATH Tritonia-M", "text"),
+        ("report_norm_angle", "報表正規化角度 (Report.NormAngle)", 10, "int"),
     ],
 }
 
@@ -205,6 +307,7 @@ class MainWindow(QMainWindow):
 
         self.osse_entries = {}
         self.tritonia_entries = {}
+        self.tritonia_m_entries = {}
 
         self.last_cfg_path = None
         self.last_output_dir = None
@@ -250,24 +353,23 @@ class MainWindow(QMainWindow):
         controls_layout = QVBoxLayout(controls_widget)
         controls_layout.setContentsMargins(10, 10, 10, 10)
 
-        # ===== 模式選擇 =====
         mode_group = QGroupBox("設計模式")
         mode_layout = QFormLayout(mode_group)
 
         self.mode_combo = QComboBox()
-        self.mode_combo.addItems(["OS-SE", "Tritonia"])
+        self.mode_combo.addItems(["OS-SE", "Tritonia", "Tritonia-M"])
         mode_layout.addRow(QLabel("波導類型"), self.mode_combo)
 
         controls_layout.addWidget(mode_group)
 
-        # ===== 參數堆疊區 =====
         self.param_stack = QStackedWidget()
-
         osse_page = self.build_param_page(OSSE_GROUPS, self.osse_entries)
         tritonia_page = self.build_param_page(TRITONIA_GROUPS, self.tritonia_entries)
+        tritonia_m_page = self.build_param_page(TRITONIA_M_GROUPS, self.tritonia_m_entries)
 
         self.param_stack.addWidget(osse_page)
         self.param_stack.addWidget(tritonia_page)
+        self.param_stack.addWidget(tritonia_m_page)
 
         controls_layout.addWidget(self.param_stack)
 
@@ -336,18 +438,32 @@ class MainWindow(QMainWindow):
             form = QFormLayout(group_box)
             form.setLabelAlignment(Qt.AlignRight)
 
-            for key, label, default, field_type in params:
+            for item in params:
+                key, label, default, field_type = item[:4]
+
                 if field_type == "float":
                     widget = QDoubleSpinBox()
                     widget.setRange(-999999.0, 999999.0)
                     widget.setDecimals(6)
                     widget.setValue(float(default))
                     widget.setSingleStep(0.1)
+
                 elif field_type == "int":
                     widget = QSpinBox()
                     widget.setRange(-999999, 999999)
                     widget.setValue(int(default))
                     widget.setSingleStep(1)
+
+                elif field_type == "enum":
+                    widget = QComboBox()
+                    options = item[4]
+                    for display_text, actual_value in options:
+                        widget.addItem(display_text, actual_value)
+
+                    idx = widget.findData(default)
+                    if idx >= 0:
+                        widget.setCurrentIndex(idx)
+
                 else:
                     widget = QLineEdit(str(default))
 
@@ -374,12 +490,19 @@ class MainWindow(QMainWindow):
 
     def collect_params(self) -> dict:
         mode = self.current_mode()
+
+        if mode == "OS-SE":
+            entries = self.osse_entries
+        elif mode == "Tritonia":
+            entries = self.tritonia_entries
+        else:
+            entries = self.tritonia_m_entries
+
         params = {}
-
-        entries = self.osse_entries if mode == "OS-SE" else self.tritonia_entries
-
         for key, widget in entries.items():
-            if isinstance(widget, (QDoubleSpinBox, QSpinBox)):
+            if isinstance(widget, QComboBox):
+                params[key] = widget.currentData()
+            elif isinstance(widget, (QDoubleSpinBox, QSpinBox)):
                 params[key] = widget.value()
             else:
                 params[key] = widget.text().strip()
