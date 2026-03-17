@@ -38,25 +38,21 @@ https://www.at-horns.eu/index.html
 
 After downloading, extract the package to a directory such as:
 
-```
-
+```text
 D:\ATH
-
-```
+````
 
 The folder should contain the ATH executable.
 
-Example:
+Example directory structure:
 
-```
-
+```text
 D:\ATH
 ├── ath.exe
 ├── examples
 ├── docs
 └── other files...
-
-````
+```
 
 ---
 
@@ -66,7 +62,7 @@ Open **Command Prompt** and run:
 
 ```bash
 D:\ATH\ath.exe
-````
+```
 
 If ATH launches correctly, the installation is complete.
 
@@ -98,7 +94,7 @@ This tool is especially useful for:
 
 Example project structure:
 
-```
+```text
 ATH-Waveguide-Designer
 │
 ├─ frontend
@@ -150,7 +146,7 @@ Set the ATH executable path in the configuration file or script.
 
 Example:
 
-```
+```text
 ATH_PATH = "D:/ATH/ath.exe"
 ```
 
@@ -202,7 +198,7 @@ The generated waveguide geometry can be viewed directly inside the GUI or export
 
 Typical export format:
 
-```
+```text
 STL
 ```
 
@@ -229,7 +225,7 @@ The GUI automatically generates and modifies these parameters.
 
 Typical generated outputs include:
 
-```
+```text
 output/
  ├── waveguide.stl
  ├── ath_config.txt
