@@ -16,6 +16,7 @@ build/
 # generated files
 generated_cfg/
 output/
+Horns/
 
 # artifacts
 *.stl
@@ -26,3 +27,9 @@ output/
 
 # logs
 *.log
+
+# generated pyinstaller specs
+ATH_GUI_v1.1.spec
+ATH_GUI_v1.2.spec
+ATH_GUI_v1.3.spec
+ATH_GUI_v1.4.spec

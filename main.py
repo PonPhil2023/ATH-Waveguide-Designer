@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import os
 import re
 import sys
 from pathlib import Path
 
+import numpy as np
 import pyvista as pv
 from PySide6.QtCore import Qt, QSize
 from PySide6.QtWidgets import (
@@ -29,13 +32,21 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QComboBox,
     QStackedWidget,
+    QSplitter,
 )
 
 from pyvistaqt import QtInteractor
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+from matplotlib import rcParams
 
 from cfg_generator import generate_cfg
 from ath_runner import run_ath
+from bem_solver import find_bem_mesh, run_bem_analysis
 from config import GENERATED_CFG_DIR, ATH_OUTPUT_ROOT
+
+rcParams["font.sans-serif"] = ["Microsoft JhengHei", "Segoe UI", "Arial"]
+rcParams["axes.unicode_minus"] = False
 
 
 MODERN_DARK_THEME = """
@@ -312,15 +323,23 @@ class MainWindow(QMainWindow):
         self.last_cfg_path = None
         self.last_output_dir = None
         self.last_stl_path = None
+        self.last_bem_result = None
 
         self._build_ui()
         self._reset_viewer_placeholder()
         self.statusBar().showMessage("就緒 (Ready)")
 
     def _build_ui(self):
+        central_splitter = QSplitter(Qt.Vertical)
+        self.setCentralWidget(central_splitter)
+
         self.plotter = QtInteractor(self)
         self.plotter.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.setCentralWidget(self.plotter)
+        central_splitter.addWidget(self.plotter)
+
+        self.bem_chart_panel = self._build_bem_chart_panel()
+        central_splitter.addWidget(self.bem_chart_panel)
+        central_splitter.setSizes([620, 280])
 
         toolbar = QToolBar("主要工具列")
         toolbar.setIconSize(QSize(20, 20))
@@ -372,6 +391,7 @@ class MainWindow(QMainWindow):
         self.param_stack.addWidget(tritonia_m_page)
 
         controls_layout.addWidget(self.param_stack)
+        controls_layout.addWidget(self._build_bem_controls())
 
         action_group = QGroupBox("核心操作")
         action_layout = QVBoxLayout(action_group)
@@ -428,6 +448,85 @@ class MainWindow(QMainWindow):
         self.mode_combo.currentIndexChanged.connect(self.param_stack.setCurrentIndex)
 
         self.setStatusBar(QStatusBar(self))
+
+    def _build_bem_controls(self) -> QWidget:
+        controls = QGroupBox("Bempp-cl 分析設定")
+        form = QFormLayout(controls)
+
+        self.bem_mesh_path = QLineEdit("-")
+        self.bem_mesh_path.setReadOnly(True)
+        self.bem_f1 = QSpinBox()
+        self.bem_f1.setRange(20, 50000)
+        self.bem_f1.setValue(400)
+        self.bem_f2 = QSpinBox()
+        self.bem_f2.setRange(20, 50000)
+        self.bem_f2.setValue(16000)
+        self.bem_points = QSpinBox()
+        self.bem_points.setRange(1, 120)
+        self.bem_points.setValue(12)
+        self.bem_angles = QSpinBox()
+        self.bem_angles.setRange(31, 361)
+        self.bem_angles.setSingleStep(10)
+        self.bem_angles.setValue(181)
+        self.bem_distance = QDoubleSpinBox()
+        self.bem_distance.setRange(0.1, 100.0)
+        self.bem_distance.setValue(2.0)
+        self.bem_distance.setSuffix(" m")
+        self.bem_quality = QComboBox()
+        self.bem_quality.addItem("快速", 1e-4)
+        self.bem_quality.addItem("標準", 1e-5)
+        self.bem_quality.addItem("高精度", 1e-6)
+        self.bem_quality.setCurrentIndex(1)
+
+        btn_pick_mesh = QPushButton("選擇 .msh")
+        btn_use_last_mesh = QPushButton("使用最近輸出")
+        btn_run_bem = QPushButton("執行 BEM 分析")
+        btn_run_bem.setObjectName("btnRun")
+
+        mesh_buttons = QWidget()
+        mesh_buttons_layout = QGridLayout(mesh_buttons)
+        mesh_buttons_layout.setContentsMargins(0, 0, 0, 0)
+        mesh_buttons_layout.addWidget(btn_pick_mesh, 0, 0)
+        mesh_buttons_layout.addWidget(btn_use_last_mesh, 0, 1)
+
+        form.addRow("網格檔案", self.bem_mesh_path)
+        form.addRow("", mesh_buttons)
+        form.addRow("起始頻率", self.bem_f1)
+        form.addRow("結束頻率", self.bem_f2)
+        form.addRow("頻率點數", self.bem_points)
+        form.addRow("角度點數", self.bem_angles)
+        form.addRow("觀測距離", self.bem_distance)
+        form.addRow("求解品質", self.bem_quality)
+        form.addRow("", btn_run_bem)
+
+        btn_pick_mesh.clicked.connect(self.pick_bem_mesh)
+        btn_use_last_mesh.clicked.connect(self.use_latest_bem_mesh)
+        btn_run_bem.clicked.connect(self.on_run_bem)
+        return controls
+
+    def _build_bem_chart_panel(self) -> QWidget:
+        panel = QGroupBox("指向性與 SPL")
+        layout = QVBoxLayout(panel)
+        self.bem_figure = Figure(figsize=(10, 4), tight_layout=True)
+        self.bem_canvas = FigureCanvas(self.bem_figure)
+        layout.addWidget(self.bem_canvas)
+        self._draw_empty_bem_plots()
+        return panel
+
+    def _draw_empty_bem_plots(self):
+        self.bem_figure.clear()
+        axes = self.bem_figure.subplots(1, 3)
+        titles = ["水平指向性", "垂直指向性", "軸向 SPL"]
+        for axis, title in zip(axes, titles):
+            axis.set_title(title)
+            axis.grid(True, alpha=0.3)
+        axes[0].set_xlabel("頻率 [Hz]")
+        axes[1].set_xlabel("頻率 [Hz]")
+        axes[2].set_xlabel("頻率 [Hz]")
+        axes[0].set_ylabel("角度 [deg]")
+        axes[1].set_ylabel("角度 [deg]")
+        axes[2].set_ylabel("SPL [dB]")
+        self.bem_canvas.draw()
 
     def build_param_page(self, groups: dict, entry_store: dict) -> QWidget:
         page = QWidget()
@@ -516,6 +615,10 @@ class MainWindow(QMainWindow):
     def set_last_output(self, path: Path | None):
         self.last_output_dir = Path(path) if path else None
         self.output_path_edit.setText(str(path) if path else "-")
+        if path:
+            mesh_path = find_bem_mesh(Path(path))
+            if mesh_path:
+                self.bem_mesh_path.setText(str(mesh_path))
 
     def set_last_stl(self, path: Path | None):
         self.last_stl_path = Path(path) if path else None
@@ -620,6 +723,99 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "錯誤", str(e))
             self.log(f"[ERROR] {e}")
             self.statusBar().showMessage("手動載入 STL 失敗")
+
+    def pick_bem_mesh(self):
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "選擇 Bempp-cl 網格",
+            str(ATH_OUTPUT_ROOT),
+            "Gmsh Mesh (*.msh)",
+        )
+        if file_path:
+            self.bem_mesh_path.setText(file_path)
+
+    def use_latest_bem_mesh(self):
+        search_root = self.last_output_dir or ATH_OUTPUT_ROOT
+        mesh_path = find_bem_mesh(Path(search_root))
+        if mesh_path is None:
+            QMessageBox.information(self, "資訊", "找不到可用的 .msh 網格。")
+            return
+        self.bem_mesh_path.setText(str(mesh_path))
+        self.log(f"[INFO] 使用 BEM 網格：{mesh_path}")
+
+    def on_run_bem(self):
+        mesh_path = Path(self.bem_mesh_path.text().strip())
+        if not mesh_path.exists():
+            QMessageBox.warning(self, "警告", "請先選擇有效的 .msh 網格。")
+            return
+
+        f1 = self.bem_f1.value()
+        f2 = self.bem_f2.value()
+        if f2 <= f1:
+            QMessageBox.warning(self, "警告", "結束頻率必須大於起始頻率。")
+            return
+
+        frequencies = np.geomspace(f1, f2, self.bem_points.value())
+
+        try:
+            self.statusBar().showMessage("Bempp-cl 分析中...")
+            self.log("=" * 72)
+            self.log(f"[INFO] BEM 網格：{mesh_path}")
+            self.log(f"[INFO] 頻率範圍：{f1} - {f2} Hz，共 {len(frequencies)} 點")
+            QApplication.processEvents()
+
+            result = run_bem_analysis(
+                mesh_path=mesh_path,
+                frequencies_hz=frequencies,
+                distance_m=self.bem_distance.value(),
+                angle_count=self.bem_angles.value(),
+                solver_tolerance=self.bem_quality.currentData(),
+            )
+            self.last_bem_result = result
+            self._draw_bem_result(result)
+            self.statusBar().showMessage("Bempp-cl 分析完成")
+            self.log("[OK] BEM 分析完成")
+        except Exception as e:
+            QMessageBox.critical(self, "BEM 分析失敗", str(e))
+            self.log(f"[ERROR] BEM 分析失敗：{e}")
+            self.statusBar().showMessage("Bempp-cl 分析失敗")
+
+    def _draw_bem_result(self, result):
+        self.bem_figure.clear()
+        ax_h, ax_v, ax_a = self.bem_figure.subplots(1, 3)
+
+        heatmap_kwargs = {
+            "origin": "lower",
+            "aspect": "auto",
+            "extent": [
+                result.frequencies_hz.min(),
+                result.frequencies_hz.max(),
+                result.angles_deg.min(),
+                result.angles_deg.max(),
+            ],
+            "cmap": "turbo",
+            "vmin": -40,
+            "vmax": 0,
+        }
+        horizontal_map = ax_h.imshow(result.horizontal_spl_db.T, **heatmap_kwargs)
+        vertical_map = ax_v.imshow(result.vertical_spl_db.T, **heatmap_kwargs)
+
+        ax_h.set_title("水平指向性")
+        ax_v.set_title("垂直指向性")
+        ax_a.set_title("軸向 SPL")
+        ax_h.set_xlabel("頻率 [Hz]")
+        ax_v.set_xlabel("頻率 [Hz]")
+        ax_a.set_xlabel("頻率 [Hz]")
+        ax_h.set_ylabel("角度 [deg]")
+        ax_v.set_ylabel("角度 [deg]")
+        ax_a.set_ylabel("SPL [dB]")
+        ax_h.set_xscale("log")
+        ax_v.set_xscale("log")
+        ax_a.grid(True, alpha=0.3)
+        ax_a.semilogx(result.frequencies_hz, result.axial_spl_db, marker="o")
+        self.bem_figure.colorbar(horizontal_map, ax=ax_h, label="相對 SPL [dB]")
+        self.bem_figure.colorbar(vertical_map, ax=ax_v, label="相對 SPL [dB]")
+        self.bem_canvas.draw()
 
     def on_generate_only(self):
         try:

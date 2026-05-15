@@ -1,0 +1,9 @@
+PySide6
+pyvista
+pyvistaqt
+matplotlib
+numpy
+scipy
+bempp-cl
+meshio
+gmsh
